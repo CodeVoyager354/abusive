@@ -2,7 +2,7 @@
   "name": "abusive",
   "description": "Detect repeat signups abusing your free plan: numbered, +tag and dotted variants of addresses you already have, plus free email providers",
   "homepage": "https://github.com/kikobeats/abusive",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "types": "src/index.d.ts",
   "main": "src/index.js",
   "exports": {

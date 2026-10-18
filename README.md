@@ -1,11 +1,5 @@
 # abusive
 
-<p align="center">
-  <br>
-  <img src="https://i.imgur.com/Mh13XWB.gif" alt="abusive">
-  <br>
-</p>
-
 ![Last version](https://img.shields.io/github/tag/kikobeats/abusive.svg?style=flat-square)
 [![Coverage Status](https://img.shields.io/coveralls/kikobeats/abusive.svg?style=flat-square)](https://coveralls.io/github/kikobeats/abusive)
 [![NPM Status](https://img.shields.io/npm/dm/abusive.svg?style=flat-square)](https://www.npmjs.org/package/abusive)
@@ -18,8 +12,8 @@ Free plans attract people who sign up again and again with addresses like these:
 derek1@gmail.com
 derek2@gmail.com
 d.erek+3@gmail.com
-destek1@aramamotorukayit.com
-destek2@aramamotorukayit.com
+destek1@acme.com
+destek2@acme.com
 ```
 
 **abusive** recognizes each as a **sibling** of an address you already have, so you can refuse the next one without banning the whole domain. Different people still sign up as usual: `jane@acme.com` and `john@acme.com`, or `jane@gmail.com` and `john@gmail.com`.
@@ -50,9 +44,9 @@ async function signupRejection (email) {
   return null
 }
 
-// signupRejection('someone@yopmail.com')          => 'Sign up with your work email.'
-// signupRejection('destek6@aramamotorukayit.com') => 'This email cannot be used to create an account.'
-// signupRejection('jane@acme.com')                => null
+// signupRejection('someone@yopmail.com') => 'Sign up with your work email.'
+// signupRejection('destek6@acme.com')    => 'This email cannot be used to create an account.'
+// signupRejection('jane@acme.com')       => null
 ```
 
 Keep the refusal message neutral. Saying that a similar account exists tells an attacker which addresses are registered.
@@ -66,7 +60,7 @@ Two addresses are **siblings** when they are different addresses at the same dom
 | `derek@gmail.com` | `derek` |
 | `derek2@gmail.com` | `derek` |
 | `d.e.r.e.k+promo@gmail.com` | `derek` |
-| `destek6@aramamotorukayit.com` | `destek` |
+| `destek6@acme.com` | `destek` |
 | `john.doe@acme.com` | `johndoe` |
 
 This catches numbered variants (`derek1`, `derek2`), `+tag` subaddresses and Gmail's ignored dots in one rule:
@@ -76,10 +70,10 @@ This catches numbered variants (`derek1`, `derek2`), `+tag` subaddresses and Gma
 | `derek2@gmail.com` | `derek1@gmail.com` | yes |
 | `d.erek7+x@gmail.com` | `derek@gmail.com` | yes |
 | `d.e.r.e.k@gmail.com` | `derek@gmail.com` | yes |
-| `destek6@aramamotorukayit.com` | `destek@aramamotorukayit.com` | yes |
+| `destek6@acme.com` | `destek@acme.com` | yes |
 | `destek+6@acme.com` | `destek@acme.com` | yes |
 | `jane@gmail.com` | `john@gmail.com` | no, different mailbox |
-| `destek1@sub.aramamotorukayit.com` | `destek@aramamotorukayit.com` | no, different domain |
+| `destek1@sub.acme.com` | `destek@acme.com` | no, different domain |
 
 Domains are compared exactly: `acme.com` and `sub.acme.com` are different, and so are `gmail.com` and `googlemail.com`.
 

@@ -1,7 +1,7 @@
 # abusive
 
 ![Last version](https://img.shields.io/github/tag/kikobeats/abusive.svg?style=flat-square)
-[![Coverage Status](https://img.shields.io/coveralls/kikobeats/abusive.svg?style=flat-square)](https://coveralls.io/github/kikobeats/abusive)
+[![Coverage Status](https://img.shields.io/coveralls/Kikobeats/abusive.svg?style=flat-square)](https://coveralls.io/github/Kikobeats/abusive)
 [![NPM Status](https://img.shields.io/npm/dm/abusive.svg?style=flat-square)](https://www.npmjs.org/package/abusive)
 
 > Detect repeat signups abusing your free plan: numbered, +tag and dotted variants of addresses you already have, plus free email providers.

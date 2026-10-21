@@ -104,11 +104,11 @@ This catches numbered variants (`derek1`, `derek2`), `+tag` subaddresses and Gma
 | `jane@gmail.com` | `john@gmail.com` | no, different mailbox |
 | `destek1@sub.acme.com` | `destek@acme.com` | no, different domain |
 
-Domains are compared exactly: `acme.com` and `sub.acme.com` are different, and so are `gmail.com` and `googlemail.com`.
+Domains are compared exactly: `acme.com` and `sub.acme.com` are different. Known aliases are normalized (`googlemail.com` is treated as `gmail.com`).
 
 It also matches people who happen to share a name: `john1990@gmail.com` is a sibling of `john@gmail.com`. A mailbox that is empty after the rule, such as `12345@gmail.com`, has no siblings, because unrelated people would all collapse into it.
 
-Before comparing, every address is put in canonical form: Unicode NFKC, format characters and variation selectors removed, full-width dots (`。．｡`) read as `.`, trailing dots dropped, and everything lowercased.
+Before comparing, every address is put in canonical form: Unicode NFKC, format characters and variation selectors removed, full-width dots (`。．｡`) read as `.`, trailing dots dropped, and everything lowercased. Mailboxes also strip combining marks and fold common Cyrillic/Greek confusable letters to their Latin look-alikes.
 
 ## API
 

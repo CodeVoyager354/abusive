@@ -7,8 +7,46 @@ const TRAILING_DOTS = /\.+$/
 const SUBADDRESS = /\+.*$/
 const NUMBERING_AND_SEPARATORS = /[\d._-]/g
 const SAFE_MAILBOX = /^[a-z0-9._+-]+$/
+const COMBINING_MARKS = /\p{M}+/gu
+const DOMAIN_ALIASES = new Map([['googlemail.com', 'gmail.com']])
 const LETTER_RUNS = /[a-z]+/g
 const HOSTNAME = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/
+const CYRILLIC_CONFUSABLES = /[аесеорухіїјѕԁһ]/g
+const GREEK_CONFUSABLES = /[αβγδεηικμνορτυχν]/g
+
+const CYRILLIC_TO_LATIN = {
+  а: 'a',
+  с: 'c',
+  е: 'e',
+  і: 'i',
+  ї: 'i',
+  ј: 'j',
+  о: 'o',
+  р: 'p',
+  ѕ: 's',
+  у: 'y',
+  х: 'x',
+  ԁ: 'd',
+  һ: 'h'
+}
+
+const GREEK_TO_LATIN = {
+  α: 'a',
+  β: 'b',
+  γ: 'y',
+  δ: 'd',
+  ε: 'e',
+  η: 'n',
+  ι: 'i',
+  κ: 'k',
+  μ: 'm',
+  ν: 'v',
+  ο: 'o',
+  ρ: 'p',
+  τ: 't',
+  υ: 'u',
+  χ: 'x'
+}
 
 const canonicalAddress = email =>
   String(email)
@@ -22,7 +60,7 @@ const parseEmail = email => {
   const address = canonicalAddress(email)
   const at = address.lastIndexOf('@')
   if (at <= 0) return null
-  const domain = address.slice(at + 1).replace(TRAILING_DOTS, '')
+  const domain = canonicalDomain(address.slice(at + 1))
   if (domain === '') return null
   return { local: address.slice(0, at), domain }
 }
@@ -46,8 +84,21 @@ const toDomainSet = dataset => {
 
 const withoutSubaddress = local => local.replace(SUBADDRESS, '')
 
+const normalizeConfusables = local =>
+  local
+    .normalize('NFKD')
+    .replace(COMBINING_MARKS, '')
+    .replace(CYRILLIC_CONFUSABLES, character => CYRILLIC_TO_LATIN[character])
+    .replace(GREEK_CONFUSABLES, character => GREEK_TO_LATIN[character])
+
+const normalizedLocal = local => normalizeConfusables(withoutSubaddress(local))
+
+const canonicalDomain = domain =>
+  DOMAIN_ALIASES.get(domain.replace(TRAILING_DOTS, '')) ??
+  domain.replace(TRAILING_DOTS, '')
+
 const mailboxOf = ({ local }) =>
-  withoutSubaddress(local).replace(NUMBERING_AND_SEPARATORS, '')
+  normalizedLocal(local).replace(NUMBERING_AND_SEPARATORS, '')
 
 const longestLetterRun = local =>
   local
@@ -59,7 +110,7 @@ const longestLetterRun = local =>
 const MIN_KEYWORD_LENGTH = 3
 
 const keywordOf = candidate => {
-  const run = longestLetterRun(withoutSubaddress(candidate.local))
+  const run = longestLetterRun(normalizedLocal(candidate.local))
   return run.length >= MIN_KEYWORD_LENGTH ? run : mailboxOf(candidate)
 }
 
@@ -75,7 +126,7 @@ const isSibling = (candidate, existing) => {
 
 const isSearchable = candidate =>
   HOSTNAME.test(candidate.domain) &&
-  SAFE_MAILBOX.test(candidate.local) &&
+  SAFE_MAILBOX.test(normalizedLocal(candidate.local)) &&
   mailboxOf(candidate) !== ''
 
 const createAbusive = ({ dataset, lookup, limit = Infinity } = {}) => {

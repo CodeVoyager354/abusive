@@ -3,7 +3,6 @@
 const INVISIBLE_CHARACTERS = /[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]/gu
 // NFKC folds U+FF0E to "." and U+FF61 to U+3002. U+3002 itself is unchanged.
 const LABEL_DOTS = /\u3002/g
-const TRAILING_DOTS = /\.+$/
 const SUBADDRESS = /\+.*$/
 const NUMBERING_AND_SEPARATORS = /[\d._-]/g
 const SAFE_MAILBOX = /^[a-z0-9._+-]+$/
@@ -56,11 +55,20 @@ const canonicalAddress = email =>
     .trim()
     .toLowerCase()
 
+const trimTrailingDots = value => {
+  let end = value.length
+  while (end > 0 && value[end - 1] === '.') end--
+  return end === value.length ? value : value.slice(0, end)
+}
+
+const canonicalDomain = domain =>
+  DOMAIN_ALIASES.get(trimTrailingDots(domain)) ?? trimTrailingDots(domain)
+
 const parseEmail = email => {
   const address = canonicalAddress(email)
   const at = address.lastIndexOf('@')
   if (at <= 0) return null
-  const domain = canonicalDomain(address.slice(at + 1))
+  const domain = trimTrailingDots(address.slice(at + 1))
   if (domain === '') return null
   return { local: address.slice(0, at), domain }
 }
@@ -76,9 +84,7 @@ const toDomainSet = dataset => {
     throw new TypeError('`dataset` must be an iterable of free email domains')
   }
   return new Set(
-    Array.from(dataset, domain =>
-      canonicalAddress(domain).replace(TRAILING_DOTS, '')
-    )
+    Array.from(dataset, domain => canonicalDomain(canonicalAddress(domain)))
   )
 }
 
@@ -92,10 +98,6 @@ const normalizeConfusables = local =>
     .replace(GREEK_CONFUSABLES, character => GREEK_TO_LATIN[character])
 
 const normalizedLocal = local => normalizeConfusables(withoutSubaddress(local))
-
-const canonicalDomain = domain =>
-  DOMAIN_ALIASES.get(domain.replace(TRAILING_DOTS, '')) ??
-  domain.replace(TRAILING_DOTS, '')
 
 const mailboxOf = ({ local }) =>
   normalizedLocal(local).replace(NUMBERING_AND_SEPARATORS, '')
@@ -117,7 +119,10 @@ const keywordOf = candidate => {
 const isSibling = (candidate, existing) => {
   const a = toParts(candidate)
   const b = toParts(existing)
-  if (a == null || b == null || a.domain !== b.domain || a.local === b.local) {
+  if (a == null || b == null) return false
+  const domainA = canonicalDomain(a.domain)
+  const domainB = canonicalDomain(b.domain)
+  if (domainA !== domainB || (a.local === b.local && a.domain === b.domain)) {
     return false
   }
   const mailbox = mailboxOf(a)
@@ -136,11 +141,9 @@ const createAbusive = ({ dataset, lookup, limit = Infinity } = {}) => {
   }
 
   const isFreeEmailDomain = domain => {
-    const labels = canonicalAddress(domain)
-      .replace(TRAILING_DOTS, '')
-      .split('.')
+    const labels = trimTrailingDots(canonicalAddress(domain)).split('.')
     return labels.some((_, index) =>
-      freeEmailDomains.has(labels.slice(index).join('.'))
+      freeEmailDomains.has(canonicalDomain(labels.slice(index).join('.')))
     )
   }
 
@@ -153,7 +156,7 @@ const createAbusive = ({ dataset, lookup, limit = Infinity } = {}) => {
     const keyword = keywordOf(candidate)
     let read = 0
     for await (const existing of await lookup({
-      domain: candidate.domain,
+      domain: canonicalDomain(candidate.domain),
       keyword
     })) {
       if (read++ >= limit) return null

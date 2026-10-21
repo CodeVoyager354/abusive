@@ -62,7 +62,7 @@ test('parseEmail splits the canonical address at the last @', t => {
   })
   t.deepEqual(parseEmail('kiko@googlemail.com'), {
     local: 'kiko',
-    domain: 'gmail.com'
+    domain: 'googlemail.com'
   })
   t.deepEqual(parseEmail(`${LEFT_TO_RIGHT_MARK}kiko@gmail.com`), {
     local: 'kiko',

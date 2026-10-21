@@ -20,6 +20,7 @@ const LEFT_TO_RIGHT_MARK = String.fromCodePoint(0x200e)
 const SOFT_HYPHEN = String.fromCodePoint(0xad)
 const VARIATION_SELECTOR = String.fromCodePoint(0xfe0f)
 const VARIATION_SELECTOR_SUPPLEMENT = String.fromCodePoint(0xe0100)
+const CYRILLIC_SMALL_E = String.fromCodePoint(0x435)
 
 const { isFreeEmail, isFreeEmailDomain, isSibling, parseEmail } = createAbusive(
   { dataset }
@@ -58,6 +59,10 @@ test('parseEmail splits the canonical address at the last @', t => {
   t.deepEqual(parseEmail(`kiko@gmail${HALFWIDTH_DOT}com`), {
     local: 'kiko',
     domain: 'gmail.com'
+  })
+  t.deepEqual(parseEmail('kiko@googlemail.com'), {
+    local: 'kiko',
+    domain: 'googlemail.com'
   })
   t.deepEqual(parseEmail(`${LEFT_TO_RIGHT_MARK}kiko@gmail.com`), {
     local: 'kiko',
@@ -164,6 +169,9 @@ test('isSibling catches same-inbox tricks', t => {
     ['d.e.r.e.k@gmail.com', 'derek@gmail.com'],
     ['D.Erek+x@gmail.com', 'derek@gmail.com'],
     ['d.erek@googlemail.com', 'derek@googlemail.com'],
+    ['derek@gmail.com', 'derek@googlemail.com'],
+    [`d${CYRILLIC_SMALL_E}rek@gmail.com`, 'derek@gmail.com'],
+    ['dérék@gmail.com', 'derek@gmail.com'],
     ['destek+6@acme.com', 'destek@acme.com'],
     ['destek+a@acme.com', 'destek+b@acme.com'],
     ['d.erek7+x@gmail.com', 'derek@gmail.com'],
@@ -186,7 +194,6 @@ test('isSibling keeps different people, the same address and other domains apart
     ['DESTEK1@aramamotorukayit.com', 'destek1@aramamotorukayit.com'],
     ['destek1@other.com', 'destek@aramamotorukayit.com'],
     ['destek1@sub.aramamotorukayit.com', 'destek@aramamotorukayit.com'],
-    ['derek@googlemail.com', 'derek1@gmail.com'],
     ['hello@microlink.io', 'joseba@microlink.io'],
     ['jane@gmail.com', 'john@gmail.com'],
     ['destekci@acme.com', 'destek@acme.com'],
@@ -251,6 +258,17 @@ test('findSibling still matches when format characters hide the mailbox', async 
     'destek@acme.com'
   )
   t.deepEqual(targets, [{ domain: 'acme.com', keyword: 'destek' }])
+})
+
+test('findSibling matches confusable and accented mailbox letters', async t => {
+  const { targets, lookup } = recordingLookup('derek@gmail.com')
+  const { findSibling } = createAbusive({ dataset, lookup })
+  t.is(await findSibling(`d${CYRILLIC_SMALL_E}rek@gmail.com`), 'derek@gmail.com')
+  t.is(await findSibling('dérék@googlemail.com'), 'derek@gmail.com')
+  t.deepEqual(targets, [
+    { domain: 'gmail.com', keyword: 'derek' },
+    { domain: 'gmail.com', keyword: 'derek' }
+  ])
 })
 
 test('findSibling reads sync, async and promised iterables', async t => {
